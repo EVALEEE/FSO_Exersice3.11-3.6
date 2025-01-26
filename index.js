@@ -1,6 +1,21 @@
 const express = require('express')
 const app = express()
+
 app.use(express.json())//一个中间件
+
+var morgan = require('morgan')
+morgan.token('details', function getDetails(req) {
+    if (req.method === 'POST' || req.method === 'PUT') {
+        return JSON.stringify({ name: req.body.name, number: req.body.number })
+    } 
+    return ''
+})
+// morgan.token('number', function getNumber(req) {
+//     return req.number
+// })
+
+app.use(morgan(':method :url :status - :response-time ms - :details'))
+
 
 // 让我们来实现我们自己的中间件，它可以打印出发送到服务器的每个请求的信息。
 // 中间件是一个接收三个参数的函数。
