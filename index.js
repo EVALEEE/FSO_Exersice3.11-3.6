@@ -1,10 +1,11 @@
 const express = require('express')
 const app = express()
+app.use(express.json())
 
 // 实现一个 Node 应用，
 // 3.1 从地址 http://localhost:3001/api/persons 返回一个硬编码的电话簿条目列表。
 
-const phonebook = [
+let phonebook = [
     {
         "id": 1,
         "name": "Arto Hellas",
@@ -65,7 +66,7 @@ app.delete('/api/persons/:id', (req, res) => {
     const personIndex = phonebook.findIndex(p => p.id === id)
 
     if (personIndex !== -1) {
-        phonebook = phonebook.filter()(p => p.id !== id)
+        phonebook = phonebook.filter(p => p.id !== id)
         res.status(204).end()
     } else {
         res.status(404).end()
@@ -73,6 +74,31 @@ app.delete('/api/persons/:id', (req, res) => {
 })
 
 
+// 3.5 扩展后端，使新的电话簿条目可以通过 HTTP POST 请求添加到地址 http://localhost:3001/api/persons。
+// 用 Math.random 函数为电话簿条目生成一个新的 ID。
+// 为你的随机值使用一个足够大的范围，这样创建重复 ID 的可能性就很小。
+
+const generateId = () => {
+    const gId = Math.floor(Math.random() * 10000)
+    return gId
+}
+
+app.post('/api/persons', (req, res) => {
+    const body = req.body
+
+    if (!body.name || !body.number) {
+        return res.status(400).json({ error: 'name or number missing' })
+    }
+
+    const person = {
+        id: generateId(),
+        name: body.name,
+        number: body.number
+    }
+
+    phonebook = phonebook.concat(person)
+    res.json(person)
+})
 
 
 const PORT = 3001
