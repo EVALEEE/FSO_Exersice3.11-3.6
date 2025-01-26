@@ -1,6 +1,19 @@
 const express = require('express')
 const app = express()
-app.use(express.json())
+app.use(express.json())//一个中间件
+
+// 让我们来实现我们自己的中间件，它可以打印出发送到服务器的每个请求的信息。
+// 中间件是一个接收三个参数的函数。
+const requestLogger = (request, response, next) => {
+    console.log('Method:', request.method)
+    console.log('Path:  ', request.path)
+    console.log('Body:  ', request.body)
+    console.log('---')
+    //在函数体的最后，调用作为参数传递的 next 函数。
+    //这个 next 函数将控制权交给下一个中间件。
+    next()
+}
+app.use(requestLogger)
 
 // 实现一个 Node 应用，
 // 3.1 从地址 http://localhost:3001/api/persons 返回一个硬编码的电话簿条目列表。
@@ -106,7 +119,14 @@ app.post('/api/persons', (req, res) => {
     res.json(person)
 })
 
-// 
+
+// 让我们在路由之后添加以下中间件，用于捕捉向不存在的路由发出的请求。
+// 对于这些请求，中间件将返回一个 JSON 格式的错误信息。
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
 
 
 const PORT = 3001
