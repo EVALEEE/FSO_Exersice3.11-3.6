@@ -86,8 +86,14 @@ const generateId = () => {
 app.post('/api/persons', (req, res) => {
     const body = req.body
 
+    //名称或数字缺失  请求不允许成功
     if (!body.name || !body.number) {
         return res.status(400).json({ error: 'name or number missing' })
+    }
+
+    //3.6 名字已经存在于电话簿中  请求不允许成功
+    if (phonebook.some(p => p.name === body.name)) {
+        return res.status(400).json({ error: 'name must be unique' })
     }
 
     const person = {
@@ -99,6 +105,8 @@ app.post('/api/persons', (req, res) => {
     phonebook = phonebook.concat(person)
     res.json(person)
 })
+
+// 
 
 
 const PORT = 3001
