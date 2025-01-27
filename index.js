@@ -1,7 +1,11 @@
 const express = require('express')
 const app = express()
+// cors 中间件 使用 Node's cors 中间件来允许来自其他原点的请求
+const cors = require('cors')
 
 app.use(express.json())//一个中间件
+app.use(cors())
+app.use(express.json()) 
 
 
 //引用Morgan中间件
@@ -53,6 +57,10 @@ let phonebook = [
         "number": "39-23-6423122"
     }
 ]
+
+app.get('/', (request, response) => {
+    response.send('<h1>Hello World!</h1>')
+})
 
 
 app.get('/api/persons', (req, res) => {
