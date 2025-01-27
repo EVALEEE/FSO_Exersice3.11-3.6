@@ -15,20 +15,18 @@ morgan.token('details', function getDetails(req) {
 
 app.use(morgan(':method :url :status - :response-time ms - :details'))
 
-
-
-// 让我们来实现我们自己的中间件，它可以打印出发送到服务器的每个请求的信息。
-// 中间件是一个接收三个参数的函数。
-const requestLogger = (request, response, next) => {
-    console.log('Method:', request.method)
-    console.log('Path:  ', request.path)
-    console.log('Body:  ', request.body)
-    console.log('---')
-    //在函数体的最后，调用作为参数传递的 next 函数。
-    //这个 next 函数将控制权交给下一个中间件。
-    next()
-}
-app.use(requestLogger)
+// // 让我们来实现我们自己的中间件，它可以打印出发送到服务器的每个请求的信息。
+// // 中间件是一个接收三个参数的函数。
+// const requestLogger = (request, response, next) => {
+//     console.log('Method:', request.method)
+//     console.log('Path:  ', request.path)
+//     console.log('Body:  ', request.body)
+//     console.log('---')
+//     //在函数体的最后，调用作为参数传递的 next 函数。
+//     //这个 next 函数将控制权交给下一个中间件。
+//     next()
+// }
+// app.use(requestLogger)
 
 // 实现一个 Node 应用，
 // 3.1 从地址 http://localhost:3001/api/persons 返回一个硬编码的电话簿条目列表。
