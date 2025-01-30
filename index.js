@@ -1,11 +1,14 @@
+require('dotenv').config()
+
 const express = require('express')
 const app = express()
 // cors 中间件 使用 Node's cors 中间件来允许来自其他原点的请求
 const cors = require('cors')
 
-app.use(express.json())//一个中间件
+const Person = require('./models/person.js')
+
 app.use(cors())
-app.use(express.json()) 
+app.use(express.json())
 
 
 //引用Morgan中间件
@@ -13,7 +16,7 @@ var morgan = require('morgan')
 morgan.token('details', function getDetails(req) {
     if (req.method === 'POST' || req.method === 'PUT') {
         return JSON.stringify({ name: req.body.name, number: req.body.number })
-    } 
+    }
     return ''
 })
 
@@ -35,89 +38,104 @@ app.use(morgan(':method :url :status - :response-time ms - :details'))
 // 实现一个 Node 应用，
 // 3.1 从地址 http://localhost:3001/api/persons 返回一个硬编码的电话簿条目列表。
 
-let phonebook = [
-    {
-        "id": 1,
-        "name": "Arto Hellas",
-        "number": "040-123456"
-    },
-    {
-        "id": 2,
-        "name": "Ada Lovelace",
-        "number": "39-44-5323523"
-    },
-    {
-        "id": 3,
-        "name": "Dan Abramov",
-        "number": "12-43-234345"
-    },
-    {
-        "id": 4,
-        "name": "Mary Poppendieck",
-        "number": "39-23-6423122"
-    }
-]
+// let phonebook = [
+//     {
+//         "id": 1,
+//         "name": "Arto Hellas",
+//         "number": "040-123456"
+//     },
+//     {
+//         "id": 2,
+//         "name": "Ada Lovelace",
+//         "number": "39-44-5323523"
+//     },
+//     {
+//         "id": 3,
+//         "name": "Dan Abramov",
+//         "number": "12-43-234345"
+//     },
+//     {
+//         "id": 4,
+//         "name": "Mary Poppendieck",
+//         "number": "39-23-6423122"
+//     }
+// ]
 
-app.get('/', (request, response) => {
-    response.send('<h1>Hello World!</h1>')
+app.get('/', (req, res) => {
+    res.send('<h1>Hello World!</h1>')
 })
 
 
+
 app.get('/api/persons', (req, res) => {
-    res.json(phonebook)
+    // Disable caching
+    res.set('Cache-Control', 'no-store')
+
+    Person.find({})
+        .then(persons => {
+            console.log('Found persons:', persons) // Debug log
+            if (!persons) {
+                return res.status(404).json({ error: 'no entries found' })
+            }
+            res.status(200).json(persons)
+        })
+        .catch(error => {
+            console.error('Error retrieving persons:', error)
+            res.status(500).json({ error: 'server error' })
+        })
 })
 
 
 // 3.2 在地址 http://localhost:3001/info 上实现一个页面, 
 // 该页面必须显示收到请求的时间和处理请求时电话簿中的条目数量。
 app.get('/info', (req, res) => {
-    const info = `
-    <p>Phonebook has info for ${phonebook.length} people</p>
-    <p>${new Date()}</p>
-    `
-    res.send(info)
+    Person.countDocuments({})
+        .then(count => {
+            const info = `
+            <p>Phonebook has info for ${count} people</p>
+            <p>${new Date().toString()}</p>
+        `
+            res.send(info)
+        })
+        .catch(error => {
+            console.log(error)
+            res.status(500).end()
+        })
 })
 
 
 // 3.3 实现显示单个电话簿条目信息的功能。获取一个 ID 为 5 的人的数据的网址应该是 http://localhost:3001/api/persons/5
 // 如果没有找到给定 ID 的条目，服务器必须以适当的状态码进行响应。
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = phonebook.find(p => p.id === id)
-
-    if (person) {
+    Person.findById(req.params.id).then(person => {
         res.json(person)
-    } else {
-        res.status(404).end()
-    }
+    })
+        .catch(error => {
+            console.log(error)
+            res.status(404).end()
+        })
 })
 
 
 // 3.4 实现功能，使其有可能通过向电话簿条目的唯一 URL 发出 HTTP DELETE 请求来删除单个电话簿条目。
-// 测试你的功能是否能与 Postman 或 Visual Studio Code REST 客户端一起工作。
 app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const personIndex = phonebook.findIndex(p => p.id === id)
-
-    if (personIndex !== -1) {
-        phonebook = phonebook.filter(p => p.id !== id)
-        res.status(204).end()
-    } else {
-        res.status(404).end()
-    }
+    Person.findByIdAndDelete(req.params.id)
+        .then(result => {
+            res.status(204).end()
+        })
+        .catch(error => {
+            console.log(error)
+            res.status(404).end()
+        })
 })
 
 
-// 3.5 扩展后端，使新的电话簿条目可以通过 HTTP POST 请求添加到地址 http://localhost:3001/api/persons。
-// 用 Math.random 函数为电话簿条目生成一个新的 ID。
-// 为你的随机值使用一个足够大的范围，这样创建重复 ID 的可能性就很小。
-
-const generateId = () => {
-    const gId = Math.floor(Math.random() * 10000)
-    return gId
-}
-
+// 3.5 使新的电话簿条目可以通过 HTTP POST 
+// 请求添加到地址 http://localhost:3001/api/persons。
 app.post('/api/persons', (req, res) => {
+    console.log('Received POST request to /api/persons')
+    console.log('Request body:', req.body)
+
     const body = req.body
 
     //名称或数字缺失  请求不允许成功
@@ -126,18 +144,25 @@ app.post('/api/persons', (req, res) => {
     }
 
     //3.6 名字已经存在于电话簿中  请求不允许成功
-    if (phonebook.some(p => p.name === body.name)) {
-        return res.status(400).json({ error: 'name must be unique' })
-    }
+    // ？
 
-    const person = {
-        id: generateId(),
+
+    const person = new Person({
         name: body.name,
         number: body.number
-    }
+    })
 
-    phonebook = phonebook.concat(person)
-    res.json(person)
+    console.log('Saving new person:', person)
+
+    person.save()
+        .then(savedPerson => {
+            res.json(savedPerson)
+        })
+        .catch(error => {
+            console.error(error)
+            res.status(500).json({ error: 'Error saving person' })
+
+        })
 })
 
 

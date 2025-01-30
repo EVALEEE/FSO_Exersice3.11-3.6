@@ -16,12 +16,12 @@ mongoose.connect(url)
     console.log('error connecting to MongoDB:', error.message)
   })
 
-const noteSchema = new mongoose.Schema({
-  content: String,
-  important: Boolean,
+const personSchema = new mongoose.Schema({
+  name: String,
+  number: String
 })
 
-noteSchema.set('toJSON', {
+personSchema.set('toJSON', {
   transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString()
     delete returnedObject._id
@@ -30,4 +30,5 @@ noteSchema.set('toJSON', {
 })
 
 
-module.exports = mongoose.model('Note', noteSchema)
+module.exports = mongoose.model('PhoneBook', personSchema)
+//数据库上的集合名字为phonebooks，就要写成PhoneBook，不然的话就新建一个集合！
