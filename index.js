@@ -1,13 +1,25 @@
 require('dotenv').config()
 
 const express = require('express')
-const app = express()
 // cors 中间件 使用 Node's cors 中间件来允许来自其他原点的请求
 const cors = require('cors')
+const app = express()
+
 
 const Person = require('./models/person.js')
 
-app.use(cors())
+// app.use(cors())
+// More specific CORS configuration
+app.use(cors({
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://your-frontend-domain.com'
+    ],
+    methods: ['GET', 'POST', 'DELETE', 'PUT'],
+    credentials: true
+  }))
+  
 app.use(express.json())
 
 
