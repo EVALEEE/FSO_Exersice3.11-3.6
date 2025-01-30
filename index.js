@@ -8,18 +8,7 @@ const app = express()
 
 const Person = require('./models/person.js')
 
-// app.use(cors())
-// More specific CORS configuration
-app.use(cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://your-frontend-domain.com'
-    ],
-    methods: ['GET', 'POST', 'DELETE', 'PUT'],
-    credentials: true
-  }))
-  
+app.use(cors())
 app.use(express.json())
 
 
@@ -201,19 +190,20 @@ app.use(unknownEndpoint)
 // error handler middleware
 const errorHandler = (error, request, response, next) => {
     console.error(error.message)
-  
+
     if (error.name === 'CastError') {
-      return response.status(400).send({ error: 'update failed' })
+        return response.status(400).send({ error: 'update failed' })
     }
-  
+
     next(error)
-  }
-  
-  // this has to be the last loaded middleware, also all the routes should be registered before this!
-  app.use(errorHandler)
+}
+
+// this has to be the last loaded middleware, also all the routes should be registered before this!
+app.use(errorHandler)
 
 
-const PORT = process.env.PORT
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
+const PORT = process.env.PORT || 3000
+const HOST = '0.0.0.0'
+app.listen(PORT, HOST, () => {
+    console.log(`Server running on ${HOST}:${PORT}`)
 })
