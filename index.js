@@ -38,28 +38,6 @@ app.use(morgan(':method :url :status - :response-time ms - :details'))
 // 实现一个 Node 应用，
 // 3.1 从地址 http://localhost:3001/api/persons 返回一个硬编码的电话簿条目列表。
 
-// let phonebook = [
-//     {
-//         "id": 1,
-//         "name": "Arto Hellas",
-//         "number": "040-123456"
-//     },
-//     {
-//         "id": 2,
-//         "name": "Ada Lovelace",
-//         "number": "39-44-5323523"
-//     },
-//     {
-//         "id": 3,
-//         "name": "Dan Abramov",
-//         "number": "12-43-234345"
-//     },
-//     {
-//         "id": 4,
-//         "name": "Mary Poppendieck",
-//         "number": "39-23-6423122"
-//     }
-// ]
 
 app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
@@ -107,17 +85,26 @@ app.get('/info', (req, res) => {
 // 3.3 实现显示单个电话簿条目信息的功能。获取一个 ID 为 5 的人的数据的网址应该是 http://localhost:3001/api/persons/5
 // 如果没有找到给定 ID 的条目，服务器必须以适当的状态码进行响应。
 app.get('/api/persons/:id', (req, res) => {
-    Person.findById(req.params.id).then(person => {
-        res.json(person)
-    })
-        .catch(error => {
+    Person.findById(req.params.id)
+        .then(person => {
+            if (person) {
+                res.json(person)
+            } else {//person为null
+                //如果id不存在，返回404
+                res.status(404).end()
+            }
+        })
+        .catch(error => {//处理findById方法返回的promise被拒绝的情况
             console.log(error)
-            res.status(404).end()
+            //400 (Bad Request) 状态码表示服务器不能或不会处理请求，因为有些东西被认为是客户端错误（
+            // 例如，请求语法格式错误，请求消息帧格式无效，或请求路由欺骗）。
+            res.status(404).send({ error: 'malformatted id' })
         })
 })
 
 
 // 3.4 实现功能，使其有可能通过向电话簿条目的唯一 URL 发出 HTTP DELETE 请求来删除单个电话簿条目。
+// 3.15
 app.delete('/api/persons/:id', (req, res) => {
     Person.findByIdAndDelete(req.params.id)
         .then(result => {
@@ -143,10 +130,6 @@ app.post('/api/persons', (req, res) => {
         return res.status(400).json({ error: 'name or number missing' })
     }
 
-    //3.6 名字已经存在于电话簿中  请求不允许成功
-    // ？
-
-
     const person = new Person({
         name: body.name,
         number: body.number
@@ -166,6 +149,34 @@ app.post('/api/persons', (req, res) => {
 })
 
 
+
+//3.17 如果用户试图为电话簿中已有姓名的人创建新的电话簿条目，
+//前端将尝试通过向条目的唯一URL发送HTTP PUT请求来更新现有条目的电话号码。
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+
+    const person = {
+        name: body.name,
+        number: body.number,
+    }
+
+    Person.findByIdAndUpdate(
+        request.params.id,
+        person,
+        { new: true, runValidators: true, context: 'query' }
+    )
+        .then(updatedPerson => {
+            if (updatedPerson) {
+                response.json(updatedPerson)
+            } else {
+                response.status(404).end()
+            }
+        })
+        .catch(error => next(error))
+})
+
+
+
 // 让我们在路由之后添加以下中间件，用于捕捉向不存在的路由发出的请求。
 // 对于这些请求，中间件将返回一个 JSON 格式的错误信息。
 const unknownEndpoint = (request, response) => {
@@ -173,6 +184,21 @@ const unknownEndpoint = (request, response) => {
 }
 
 app.use(unknownEndpoint)
+
+
+// error handler middleware
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'update failed' })
+    }
+  
+    next(error)
+  }
+  
+  // this has to be the last loaded middleware, also all the routes should be registered before this!
+  app.use(errorHandler)
 
 
 const PORT = process.env.PORT
